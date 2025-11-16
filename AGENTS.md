@@ -15,13 +15,13 @@ Internal orientation notes for Codex-style agents working on this project.
 | **Infrastructure** | `Dockerfile`, `docker-compose.yml`, `start.sh` | Build/run the combined FastAPI + Streamlit container locally; Coolify builds directly from the Dockerfile. Ensure environment variables are supplied via `.env` or the hosting platform. |
 | **Middleware API** | `middleware.py`, `storage/appwrite_storage.py` | Downloads FAISS + metadata (if missing), exposes `/healthz`, `/api/rag`, `/api/chat`, and forwards augmented prompts to the remote LLM. |
 | **Streamlit Frontend** | `frontend/frontend.py` | UI surface for MedBot, calling `/api/rag` then `/api/chat`, and displaying streaming-like responses. |
-| **Data Management** | `scripts/upload_textbooks.py`, `dataset_ingest.py`, `utils/*` | Upload textbook archives to Appwrite and build/upload FAISS artifacts. Utilities support PDF parsing and embedding generation. |
+| **Data Management** | `scripts/upload_files_to_appwrite.py`, `dataset_ingest.py`, `utils/*` | Upload dataset archives to Appwrite and build/upload FAISS artifacts. Utilities support PDF parsing and embedding generation. |
 
 ## Standard Workflows
 
 1. **Seed/refresh the dataset**
-   - `python scripts/upload_textbooks.py --source books/MedQuAD-master/textbooks` (requires Appwrite creds in `.env`).
-   - `python dataset_ingest.py --source books/MedQuAD-master/textbooks/chunk --upload` to rebuild FAISS and push to Appwrite.
+   - `python scripts/upload_files_to_appwrite.py --source textbooks` (requires Appwrite creds in `.env`; use `--file-id` to version uploads).
+   - `python dataset_ingest.py --source textbooks/chunk --upload` to rebuild FAISS and push to Appwrite.
 
 2. **Run locally**
    - `docker compose up --build`

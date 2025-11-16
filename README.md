@@ -18,7 +18,7 @@ The codebase is ready for GitHub + Coolify deployments: the Dockerfile builds a 
 | `middleware.py` | FastAPI application exposing `/healthz`, `/api/rag`, and `/api/chat`. Loads FAISS + metadata from Appwrite and calls the remote LLM. |
 | `frontend/frontend.py` | Streamlit chat client that calls `/api/rag` then `/api/chat`. |
 | `storage/appwrite_storage.py` | Thin wrapper around the Appwrite Python SDK for downloads/uploads. |
-| `scripts/upload_textbooks.py` | Compresses `books/MedQuAD-master/textbooks/` and uploads it to Appwrite storage. |
+| `scripts/upload_files_to_appwrite.py` | Compresses any dataset folder (default `textbooks/`) and uploads it to Appwrite storage. |
 | `dataset_ingest.py` | Builds the FAISS index + metadata from chunked JSONL files and can upload the artifacts to Appwrite. |
 | `utils/*` | Misc utilities (PDF loader, embedding helpers). |
 | `.env.example` | Documents all environment variables required by the service and the helper scripts. |
@@ -26,7 +26,7 @@ The codebase is ready for GitHub + Coolify deployments: the Dockerfile builds a 
 ## System Architecture
 
 1. **Data storage** – MedQuAD textbooks live in Appwrite storage (bucket `data`). Use `scripts/upload_textbooks.py` whenever you refresh the source material.
-2. **Index build** – `python dataset_ingest.py --upload` reads chunked JSONL files (e.g., `books/MedQuAD-master/textbooks/chunk/*.jsonl`), embeds them with `sentence-transformers/all-MiniLM-L6-v2`, builds a FAISS `IndexFlatIP`, writes `faiss.index` + `metadata.jsonl`, and uploads those artifacts back to Appwrite (`APPWRITE_FAISS_INDEX_ID`, `APPWRITE_FAISS_METADATA_ID`).
+2. **Index build** – `python dataset_ingest.py --upload` reads chunked JSONL files (default `textbooks/chunk/*.jsonl`), embeds them with `sentence-transformers/all-MiniLM-L6-v2`, builds a FAISS `IndexFlatIP`, writes `faiss.index` + `metadata.jsonl`, and uploads those artifacts back to Appwrite (`APPWRITE_FAISS_INDEX_ID`, `APPWRITE_FAISS_METADATA_ID`).
 3. **Middleware** – On startup, `middleware.py` downloads the FAISS + metadata bundle (if missing), loads it into memory, and exposes `/api/rag` (retrieval only) plus `/api/chat` (retrieval + call to QnAIGC’s `/chat/completions`).
 4. **Frontend** – `frontend/frontend.py` (Streamlit) collects user prompts, calls `/api/rag` to augment them, then posts to `/api/chat` and displays the response, keeping session state locally.
 5. **Remote LLM** – Qiniu QnAIGC (or any provider matching the OpenAI-style API) performs text generation. Supply `QINIU_API_KEY`, `QINIU_API_URL`, and optionally `QINIU_MODEL_NAME` in `.env`.
@@ -44,15 +44,15 @@ The codebase is ready for GitHub + Coolify deployments: the Dockerfile builds a 
 
    ```bash
    # Copy .env.example to .env and fill in Appwrite + QnAIGC credentials first
-   python scripts/upload_textbooks.py --source books/MedQuAD-master/textbooks --file-id medquad-textbooks
+   python scripts/upload_files_to_appwrite.py --source textbooks --file-id medquad-textbooks
    ```
 
-   The script compresses the folder into `medquad-textbooks.tar.gz` and uploads it to the configured bucket. Adjust `--file-id` if you want multiple versions.
+   The script compresses the folder into `<file-id>.tar.gz` (so each upload has a distinct filename) and uploads it to the configured bucket. Adjust `--file-id` whenever you want another dataset snapshot.
 
 2. **Build + upload the FAISS bundle**
 
    ```bash
-   python dataset_ingest.py --source books/MedQuAD-master/textbooks/chunk --output artifacts --upload
+   python dataset_ingest.py --source textbooks/chunk --output artifacts --upload
    ```
 
    This command writes `artifacts/faiss.index` and `artifacts/metadata.jsonl`, then uploads them to Appwrite using the IDs in `.env`.
@@ -73,7 +73,7 @@ The container reads `.env` for runtime secrets (compose already mounts it). `/he
 
 - `/api/rag`: POST a JSON string (the raw user prompt) to inspect the augmented prompt before hitting the LLM.
 - `/api/chat`: Send an OpenAI-style payload to get a full response (the middleware injects the retrieved context for you).
-- `scripts/upload_textbooks.py`: one-shot uploader for the MedQuAD folder.
+- `scripts/upload_files_to_appwrite.py`: archive/uploader for any dataset folder.
 - `dataset_ingest.py`: rebuild FAISS + metadata, optionally uploading to storage.
 
 ## Coolify / CI/CD Notes

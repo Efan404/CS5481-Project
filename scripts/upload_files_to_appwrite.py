@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compress and upload MedQuAD textbooks to Appwrite storage."""
+"""Compress and upload any directory to Appwrite storage."""
 
 from __future__ import annotations
 
@@ -22,13 +22,13 @@ DEFAULT_SOURCE = Path("textbooks")
 DEFAULT_ARCHIVE_ID = os.getenv("APPWRITE_TEXTBOOK_ARCHIVE_ID", "medquad-textbooks")
 
 
-def create_archive(source_dir: Path) -> Path:
+def create_archive(source_dir: Path, archive_name: str) -> Path:
     source_dir = source_dir.resolve()
     if not source_dir.exists():
         raise FileNotFoundError(f"Source directory not found: {source_dir}")
 
     temp_dir = Path(tempfile.gettempdir())
-    archive_path = temp_dir / "medquad-textbooks.tar.gz"
+    archive_path = temp_dir / archive_name
     if archive_path.exists():
         archive_path.unlink()
 
@@ -39,14 +39,15 @@ def create_archive(source_dir: Path) -> Path:
 
 def upload_archive(source_dir: Path, file_id: str) -> None:
     storage = AppwriteStorageClient()
-    archive_path = create_archive(source_dir)
-    storage.upload_file(file_id=file_id, source_path=archive_path, filename=archive_path.name)
+    archive_name = f"{file_id}.tar.gz"
+    archive_path = create_archive(source_dir, archive_name)
+    storage.upload_file(file_id=file_id, source_path=archive_path)
     print(f"Uploaded {archive_path} to Appwrite as file ID '{file_id}'")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Upload MedQuAD textbooks directory to Appwrite storage.")
-    parser.add_argument("--source", type=Path, default=DEFAULT_SOURCE, help="Path to the textbooks directory")
+    parser = argparse.ArgumentParser(description="Archive a directory as tar.gz and upload it to Appwrite storage.")
+    parser.add_argument("--source", type=Path, default=DEFAULT_SOURCE, help="Path to the directory you want to upload")
     parser.add_argument(
         "--file-id",
         default=DEFAULT_ARCHIVE_ID,
