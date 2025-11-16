@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.env
+*.env
+rag/.env
+rag/.env.local
+rag/.env.*
+rag/books/
+rag/textbooks/
+rag/MedQuAD-master/
+volumes/
+*.tar.gz
+*.zip
+.DS_Store

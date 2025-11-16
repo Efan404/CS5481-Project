@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rag-app
+    env_file:
+      - rag/.env
+    ports:
+      - "8964:8964"
+      - "8501:8501"
+    restart: unless-stopped
+
+networks:
+  default:
+    name: rag-app-network

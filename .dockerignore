@@ -1,0 +1,7 @@
+.git
+__pycache__
+.DS_Store
+rag/books
+rag/textbooks
+rag/MedQuAD-master
+rag/__pycache__
