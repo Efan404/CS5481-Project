@@ -54,7 +54,7 @@ class AppwriteStorageClient:
         except AppwriteException:
             pass  # Ignore missing file
 
-        upload_file = InputFile.from_path(str(source_path), filename=filename or source_path.name)
+        upload_file = InputFile.from_path(str(source_path))
         try:
             self.storage.create_file(self.bucket_id, file_id=file_id, file=upload_file)
         except AppwriteException as exc:

@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: rag-app
     env_file:
-      - rag/.env
+      - .env
     ports:
       - "8964:8964"
       - "8501:8501"

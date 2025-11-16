@@ -9,9 +9,16 @@ import tarfile
 import tempfile
 from pathlib import Path
 
-from rag.storage.appwrite_storage import AppwriteStorageClient
+try:
+    from storage.appwrite_storage import AppwriteStorageClient
+except ModuleNotFoundError:
+    import sys
+    from pathlib import Path as _Path
 
-DEFAULT_SOURCE = Path("books/MedQuAD-master/textbooks")
+    sys.path.append(str(_Path(__file__).resolve().parents[1]))
+    from storage.appwrite_storage import AppwriteStorageClient  # type: ignore
+
+DEFAULT_SOURCE = Path("textbooks")
 DEFAULT_ARCHIVE_ID = os.getenv("APPWRITE_TEXTBOOK_ARCHIVE_ID", "medquad-textbooks")
 
 

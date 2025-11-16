@@ -12,7 +12,7 @@ from fastapi import Body, FastAPI, HTTPException
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 
-from rag.storage.appwrite_storage import AppwriteStorageClient
+from storage.appwrite_storage import AppwriteStorageClient
 
 load_dotenv()
 

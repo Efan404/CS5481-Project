@@ -14,21 +14,21 @@ The codebase is ready for GitHub + Coolify deployments: the Dockerfile builds a 
 | Path | Description |
 | --- | --- |
 | `Dockerfile` / `docker-compose.yml` | Build and (optionally) run the single container that hosts FastAPI + Streamlit. |
-| `rag/start.sh` | Boots Uvicorn and Streamlit simultaneously inside the container. |
-| `rag/middleware.py` | FastAPI application exposing `/healthz`, `/api/rag`, and `/api/chat`. Loads FAISS + metadata from Appwrite and calls the remote LLM. |
-| `rag/frontend/frontend.py` | Streamlit chat client that calls `/api/rag` then `/api/chat`. |
-| `rag/storage/appwrite_storage.py` | Thin wrapper around the Appwrite Python SDK for downloads/uploads. |
+| `start.sh` | Boots Uvicorn and Streamlit simultaneously inside the container. |
+| `middleware.py` | FastAPI application exposing `/healthz`, `/api/rag`, and `/api/chat`. Loads FAISS + metadata from Appwrite and calls the remote LLM. |
+| `frontend/frontend.py` | Streamlit chat client that calls `/api/rag` then `/api/chat`. |
+| `storage/appwrite_storage.py` | Thin wrapper around the Appwrite Python SDK for downloads/uploads. |
 | `scripts/upload_textbooks.py` | Compresses `books/MedQuAD-master/textbooks/` and uploads it to Appwrite storage. |
-| `rag/dataset_ingest.py` | Builds the FAISS index + metadata from chunked JSONL files and can upload the artifacts to Appwrite. |
-| `rag/utils/*` | Misc utilities (PDF loader, embedding helpers). |
-| `rag/.env.example` | Documents all environment variables required by the service and the helper scripts. |
+| `dataset_ingest.py` | Builds the FAISS index + metadata from chunked JSONL files and can upload the artifacts to Appwrite. |
+| `utils/*` | Misc utilities (PDF loader, embedding helpers). |
+| `.env.example` | Documents all environment variables required by the service and the helper scripts. |
 
 ## System Architecture
 
 1. **Data storage** – MedQuAD textbooks live in Appwrite storage (bucket `data`). Use `scripts/upload_textbooks.py` whenever you refresh the source material.
-2. **Index build** – `rag/dataset_ingest.py --upload` reads chunked JSONL files (e.g., `books/MedQuAD-master/textbooks/chunk/*.jsonl`), embeds them with `sentence-transformers/all-MiniLM-L6-v2`, builds a FAISS `IndexFlatIP`, writes `faiss.index` + `metadata.jsonl`, and uploads those artifacts back to Appwrite (`APPWRITE_FAISS_INDEX_ID`, `APPWRITE_FAISS_METADATA_ID`).
-3. **Middleware** – On startup, `rag/middleware.py` downloads the FAISS + metadata bundle (if missing), loads it into memory, and exposes `/api/rag` (retrieval only) plus `/api/chat` (retrieval + call to QnAIGC’s `/chat/completions`).
-4. **Frontend** – `rag/frontend/frontend.py` (Streamlit) collects user prompts, calls `/api/rag` to augment them, then posts to `/api/chat` and displays the response, keeping session state locally.
+2. **Index build** – `python dataset_ingest.py --upload` reads chunked JSONL files (e.g., `books/MedQuAD-master/textbooks/chunk/*.jsonl`), embeds them with `sentence-transformers/all-MiniLM-L6-v2`, builds a FAISS `IndexFlatIP`, writes `faiss.index` + `metadata.jsonl`, and uploads those artifacts back to Appwrite (`APPWRITE_FAISS_INDEX_ID`, `APPWRITE_FAISS_METADATA_ID`).
+3. **Middleware** – On startup, `middleware.py` downloads the FAISS + metadata bundle (if missing), loads it into memory, and exposes `/api/rag` (retrieval only) plus `/api/chat` (retrieval + call to QnAIGC’s `/chat/completions`).
+4. **Frontend** – `frontend/frontend.py` (Streamlit) collects user prompts, calls `/api/rag` to augment them, then posts to `/api/chat` and displays the response, keeping session state locally.
 5. **Remote LLM** – Qiniu QnAIGC (or any provider matching the OpenAI-style API) performs text generation. Supply `QINIU_API_KEY`, `QINIU_API_URL`, and optionally `QINIU_MODEL_NAME` in `.env`.
 
 ## Prerequisites
@@ -43,7 +43,7 @@ The codebase is ready for GitHub + Coolify deployments: the Dockerfile builds a 
 1. **Upload textbooks**
 
    ```bash
-   # Copy rag/.env.example to rag/.env and fill in Appwrite + QnAIGC credentials first
+   # Copy .env.example to .env and fill in Appwrite + QnAIGC credentials first
    python scripts/upload_textbooks.py --source books/MedQuAD-master/textbooks --file-id medquad-textbooks
    ```
 
@@ -52,7 +52,6 @@ The codebase is ready for GitHub + Coolify deployments: the Dockerfile builds a 
 2. **Build + upload the FAISS bundle**
 
    ```bash
-   cd rag
    python dataset_ingest.py --source books/MedQuAD-master/textbooks/chunk --output artifacts --upload
    ```
 
@@ -68,14 +67,14 @@ docker compose up --build
 # FastAPI docs -> http://localhost:8964/docs
 ```
 
-The container reads `rag/.env` for runtime secrets (compose already mounts it). `/healthz` reports whether FAISS artifacts were found locally; if missing, the middleware automatically attempts to download them from Appwrite.
+The container reads `.env` for runtime secrets (compose already mounts it). `/healthz` reports whether FAISS artifacts were found locally; if missing, the middleware automatically attempts to download them from Appwrite.
 
 ## Helper Endpoints & Scripts
 
 - `/api/rag`: POST a JSON string (the raw user prompt) to inspect the augmented prompt before hitting the LLM.
 - `/api/chat`: Send an OpenAI-style payload to get a full response (the middleware injects the retrieved context for you).
 - `scripts/upload_textbooks.py`: one-shot uploader for the MedQuAD folder.
-- `rag/dataset_ingest.py`: rebuild FAISS + metadata, optionally uploading to storage.
+- `dataset_ingest.py`: rebuild FAISS + metadata, optionally uploading to storage.
 
 ## Coolify / CI/CD Notes
 
@@ -85,7 +84,7 @@ The container reads `rag/.env` for runtime secrets (compose already mounts it). 
 
 ## Configuration Reference
 
-Key environment variables (see `rag/.env.example` for the full list):
+Key environment variables (see `.env.example` for the full list):
 
 - `QINIU_API_KEY`, `QINIU_API_URL`, `QINIU_MODEL_NAME`
 - `APPWRITE_ENDPOINT`, `APPWRITE_PROJECT_ID`, `APPWRITE_BUCKET_ID`, `APPWRITE_BUCKET_NAME`, `APPWRITE_API_KEY`
@@ -94,4 +93,4 @@ Key environment variables (see `rag/.env.example` for the full list):
 
 ## License & Attribution
 
-The Milvus configuration file (`milvus.yaml`) remains for reference but is no longer used in the runtime stack. The MedQuAD dataset attribution is documented inside `rag/textbooks/README.md`. Respect the source licenses when ingesting additional medical content.
+The Milvus configuration file (`milvus.yaml`) remains for reference but is no longer used in the runtime stack. The MedQuAD dataset attribution is documented inside `textbooks/README.md`. Respect the source licenses when ingesting additional medical content.

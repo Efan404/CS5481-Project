@@ -6,22 +6,22 @@ Internal orientation notes for Codex-style agents working on this project.
 
 - Deliver a medical Retrieval-Augmented Generation assistant that pulls textbook snippets from a FAISS index stored in Appwrite Storage and sends replies through QnAIGC (`deepseek/deepseek-v3.2-exp` by default).
 - Raw textbooks live in the Appwrite bucket `data` (id `691947bc0010c515b099`). Helper scripts handle uploads/downloads; the runtime container remains stateless.
-- FastAPI (`rag/middleware.py`) is the backend entrypoint consumed by both the Streamlit UI and any future SaaS layer (e.g., Coolify deployments).
+- FastAPI (`middleware.py`) is the backend entrypoint consumed by both the Streamlit UI and any future SaaS layer (e.g., Coolify deployments).
 
 ## Key Components & Ownership
 
 | Area | Primary Files | Responsibilities |
 | --- | --- | --- |
-| **Infrastructure** | `Dockerfile`, `docker-compose.yml`, `rag/start.sh` | Build/run the combined FastAPI + Streamlit container locally; Coolify builds directly from the Dockerfile. Ensure environment variables are supplied via `.env` or the hosting platform. |
-| **Middleware API** | `rag/middleware.py`, `rag/storage/appwrite_storage.py` | Downloads FAISS + metadata (if missing), exposes `/healthz`, `/api/rag`, `/api/chat`, and forwards augmented prompts to the remote LLM. |
-| **Streamlit Frontend** | `rag/frontend/frontend.py` | UI surface for MedBot, calling `/api/rag` then `/api/chat`, and displaying streaming-like responses. |
-| **Data Management** | `scripts/upload_textbooks.py`, `rag/dataset_ingest.py`, `rag/utils/*` | Upload textbook archives to Appwrite and build/upload FAISS artifacts. Utilities support PDF parsing and embedding generation. |
+| **Infrastructure** | `Dockerfile`, `docker-compose.yml`, `start.sh` | Build/run the combined FastAPI + Streamlit container locally; Coolify builds directly from the Dockerfile. Ensure environment variables are supplied via `.env` or the hosting platform. |
+| **Middleware API** | `middleware.py`, `storage/appwrite_storage.py` | Downloads FAISS + metadata (if missing), exposes `/healthz`, `/api/rag`, `/api/chat`, and forwards augmented prompts to the remote LLM. |
+| **Streamlit Frontend** | `frontend/frontend.py` | UI surface for MedBot, calling `/api/rag` then `/api/chat`, and displaying streaming-like responses. |
+| **Data Management** | `scripts/upload_textbooks.py`, `dataset_ingest.py`, `utils/*` | Upload textbook archives to Appwrite and build/upload FAISS artifacts. Utilities support PDF parsing and embedding generation. |
 
 ## Standard Workflows
 
 1. **Seed/refresh the dataset**
-   - `python scripts/upload_textbooks.py --source books/MedQuAD-master/textbooks` (requires Appwrite creds in `rag/.env`).
-   - `cd rag && python dataset_ingest.py --source books/MedQuAD-master/textbooks/chunk --upload` to rebuild FAISS and push to Appwrite.
+   - `python scripts/upload_textbooks.py --source books/MedQuAD-master/textbooks` (requires Appwrite creds in `.env`).
+   - `python dataset_ingest.py --source books/MedQuAD-master/textbooks/chunk --upload` to rebuild FAISS and push to Appwrite.
 
 2. **Run locally**
    - `docker compose up --build`

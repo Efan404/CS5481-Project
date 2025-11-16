@@ -5,9 +5,13 @@ __pycache__/
 rag/.env
 rag/.env.local
 rag/.env.*
-rag/books/
-rag/textbooks/
-rag/MedQuAD-master/
+.env
+.env.local
+.env.*
+books/
+textbooks/
+MedQuAD-master/
+.venv/
 volumes/
 *.tar.gz
 *.zip

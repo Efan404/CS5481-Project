@@ -12,15 +12,15 @@ import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-if __package__ is None or __package__ == "":
+try:
+    from storage.appwrite_storage import AppwriteStorageClient
+except ModuleNotFoundError:
     import sys
 
-    sys.path.append(str(Path(__file__).resolve().parents[1]))
-    from rag.storage.appwrite_storage import AppwriteStorageClient  # type: ignore
-else:
-    from .storage.appwrite_storage import AppwriteStorageClient
+    sys.path.append(str(Path(__file__).resolve().parent))
+    from storage.appwrite_storage import AppwriteStorageClient  # type: ignore
 
-DEFAULT_SOURCE = Path("books/MedQuAD-master/textbooks/chunk")
+DEFAULT_SOURCE = Path("textbooks/chunk")
 DEFAULT_OUTPUT_DIR = Path("artifacts")
 DEFAULT_INDEX_ID = os.getenv("APPWRITE_FAISS_INDEX_ID", "faiss-index")
 DEFAULT_METADATA_ID = os.getenv("APPWRITE_FAISS_METADATA_ID", "faiss-metadata")
